@@ -1,0 +1,12 @@
+name = "structify3d-backend"
+main = "index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[build]
+command = "npm install"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "structify3d-db"
+database_id = "129aa534-618a-48ec-ba11-5b47cec34250"
