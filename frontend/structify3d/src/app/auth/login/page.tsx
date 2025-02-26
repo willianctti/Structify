@@ -16,7 +16,8 @@ export default function LoginPage() {
     e.preventDefault()
     
     try {
-      const response = await fetch('http://localhost:8787/login', {
+      // const response = await fetch('http://localhost:8787/login', {
+        const response = await fetch('https://structify3d-backend.willianctti.workers.dev/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

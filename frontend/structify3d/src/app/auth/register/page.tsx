@@ -17,7 +17,8 @@ export default function RegisterPage() {
     e.preventDefault()
     
     try {
-      const response = await fetch('http://localhost:8787/register', {
+      // const response = await fetch('http://localhost:8787/register', {
+        const response = await fetch('https://structify3d-backend.willianctti.workers.dev/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

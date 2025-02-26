@@ -1,8 +1,8 @@
 'use client'
 
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid, useGLTF, useTexture } from '@react-three/drei'
-import { useEffect, useMemo, Suspense, useState } from 'react'
+import { OrbitControls, useGLTF } from '@react-three/drei'
+import { useMemo, Suspense } from 'react'
 import * as THREE from 'three'
 
 type Props = {

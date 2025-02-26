@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://structify3d-backend.willianctti.workers.dev'
 
 export default function NewProjectPage() {
   const router = useRouter()
@@ -44,7 +45,6 @@ export default function NewProjectPage() {
         throw new Error(error.message || 'Erro ao criar projeto')
       }
 
-      const data = await response.json()
       router.push('/dashboard')
     } catch (error) {
       console.error('Erro:', error)

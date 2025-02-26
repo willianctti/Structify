@@ -10,7 +10,8 @@ interface Project {
   created_at: string
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://structify3d-backend.willianctti.workers.dev'
 
 export default function DashboardPage() {
   const router = useRouter()

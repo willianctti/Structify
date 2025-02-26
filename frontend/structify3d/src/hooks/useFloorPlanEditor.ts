@@ -28,8 +28,6 @@ interface Window {
 type Tool = 'wall' | 'door' | 'window' | 'select'
 
 const SNAP_DISTANCE = 15    
-const ANGLE_SNAP = Math.PI / 4 
-const WALL_THICKNESS = 0.1
 
 export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
   const [selectedTool, setSelectedTool] = useState<Tool>('wall')
@@ -185,7 +183,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
       context.fillStyle = '#ff0000'
       context.fill()
     }
-  }, [walls, doors, windows, snapPoint])
+  }, [walls, doors, windows, snapPoint, canvasRef])
 
   const handleDoorClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return
@@ -212,7 +210,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
         return door
       }))
     }
-  }, [doors])
+  }, [doors, canvasRef])
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return
@@ -250,7 +248,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
         }
       }
     }
-  }, [selectedTool, findWallSnap, handleDoorClick])
+  }, [selectedTool, findWallSnap, handleDoorClick, canvasRef])
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return
@@ -288,7 +286,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
       context.lineTo(newSnapPoint.x, newSnapPoint.y)
       context.stroke()
     }
-  }, [selectedTool, isDrawing, findWallSnap, findSnapPoint, drawAll])
+  }, [selectedTool, isDrawing, findWallSnap, findSnapPoint, drawAll, canvasRef])
 
   const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !startPointRef.current || !canvasRef.current) return
@@ -344,7 +342,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
     startPointRef.current = null
     setSnapPoint(null)
     drawAll()
-  }, [isDrawing, snapPoint, drawAll])
+  }, [isDrawing, snapPoint, drawAll, canvasRef])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -370,7 +368,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
     window.addEventListener('resize', resizeCanvas)
 
     return () => window.removeEventListener('resize', resizeCanvas)
-  }, [drawAll])
+  }, [drawAll, canvasRef])
 
   return {
     selectedTool,
