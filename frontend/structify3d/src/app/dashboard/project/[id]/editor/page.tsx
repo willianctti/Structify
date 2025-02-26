@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation'
 import { use } from 'react'
 import { useFloorPlanEditor } from '@/hooks/useFloorPlanEditor'
 import FloorPlan3DViewer from '@/components/FloorPlan3DViewer'
-import { ArrowLeft, Ruler, DoorOpen, AppWindow, MousePointer2, Save } from 'lucide-react'
+import { ArrowLeft, Ruler, DoorOpen, AppWindow, MousePointer2, Save, Eraser } from 'lucide-react'
+import ImageAnalyzer from '@/components/ImageAnalyzer'
+import { Wall } from '@/types/floorplan'
+import { LucideIcon } from 'lucide-react'
 
 type PageProps = {
   params: Promise<{
@@ -15,6 +18,26 @@ type PageProps = {
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://structify3d-backend.willianctti.workers.dev'
+
+interface ToolButtonProps {
+  icon: LucideIcon
+  label: string
+  active: boolean
+  onClick: () => void
+}
+
+function ToolButton({ icon: Icon, label, active, onClick }: ToolButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-16 h-16 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors
+        ${active ? 'bg-neutral-800 text-white dark:bg-neutral-700' : 'hover:bg-neutral-200 dark:hover:bg-neutral-800'}`}
+    >
+      <Icon size={24} />
+      <span className="text-xs">{label}</span>
+    </button>
+  )
+}
 
 export default function ProjectEditor({ params }: PageProps) {
   const router = useRouter()
@@ -134,6 +157,23 @@ export default function ProjectEditor({ params }: PageProps) {
     }
   }
 
+  const handleWallsDetected = (detectedWalls: Wall[]) => {
+    setWalls(prevWalls => [...prevWalls, ...detectedWalls])
+  }
+
+  const handleClearCanvas = () => {
+    setWalls([])
+    setDoors([])
+    setWindows([])
+
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d')
+      if (ctx) {
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-neutral-50 dark:bg-neutral-900">
@@ -162,29 +202,22 @@ export default function ProjectEditor({ params }: PageProps) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-50 dark:bg-neutral-900">
-      <header className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 shadow-sm">
-        <div className="max-w-screen-2xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 overflow-y-auto">
+      <header className="sticky top-0 z-50 bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 shadow-sm h-14">
+        <div className="max-w-screen-2xl mx-auto px-4 h-full flex items-center justify-between">
+          <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2">
+            <ArrowLeft size={20} />
+            <span>{projectName}</span>
+          </button>
+          <div className="flex items-center gap-2">
             <button 
-              onClick={() => router.push('/dashboard')}
-              className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 flex items-center space-x-2 transition-colors group"
+              onClick={handleClearCanvas}
+              className="btn-secondary flex items-center gap-2"
             >
-              <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">
-                {loading ? 'Carregando...' : projectName}
-              </span>
+              <Eraser size={20} />
+              <span>Limpar</span>
             </button>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <button 
-              className="px-4 py-2 bg-neutral-800 dark:bg-neutral-700 text-white rounded-lg 
-                         hover:bg-neutral-900 dark:hover:bg-neutral-600 
-                         flex items-center space-x-2 transition-colors"
-              onClick={handleSave}
-              disabled={loading}
-            >
+            <button onClick={handleSave} className="btn-primary flex items-center gap-2">
               <Save size={20} />
               <span>Salvar</span>
             </button>
@@ -192,72 +225,61 @@ export default function ProjectEditor({ params }: PageProps) {
         </div>
       </header>
 
-      <div className="flex-1 p-4">
-        <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg h-full flex overflow-hidden border border-neutral-200 dark:border-neutral-700">
-          <div className="w-20 bg-neutral-100 dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 p-3 flex flex-col items-center space-y-4">
-            <button 
-              className={`w-14 h-14 rounded-lg flex items-center justify-center transition-all ${
-                selectedTool === 'select' 
-                  ? 'bg-neutral-800 dark:bg-neutral-700 text-white' 
-                  : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
-              }`}
-              onClick={() => setSelectedTool('select')}
-              title="Selecionar"
-            >
-              <MousePointer2 size={24} />
-            </button>
-            
-            <button 
-              className={`w-14 h-14 rounded-lg flex items-center justify-center transition-all ${
-                selectedTool === 'wall' 
-                  ? 'bg-neutral-800 dark:bg-neutral-700 text-white' 
-                  : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
-              }`}
-              onClick={() => setSelectedTool('wall')}
-              title="Desenhar parede"
-            >
-              <Ruler size={24} />
-            </button>
-            
-            <button 
-              className={`w-14 h-14 rounded-lg flex items-center justify-center transition-all ${
-                selectedTool === 'door' 
-                  ? 'bg-neutral-800 dark:bg-neutral-700 text-white' 
-                  : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
-              }`}
-              onClick={() => setSelectedTool('door')}
-              title="Adicionar porta"
-            >
-              <DoorOpen size={24} />
-            </button>
-            
-            <button 
-              className={`w-14 h-14 rounded-lg flex items-center justify-center transition-all ${
-                selectedTool === 'window' 
-                  ? 'bg-neutral-800 dark:bg-neutral-700 text-white' 
-                  : 'hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
-              }`}
-              onClick={() => setSelectedTool('window')}
-              title="Adicionar janela"
-            >
-              <AppWindow size={24} />
-            </button>
-          </div>
-
-          <div className="flex-1 flex">
-            <div className="w-1/2 p-4 border-r border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900">
-              <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-inner h-full">
-                <canvas
-                  ref={canvasRef}
-                  className="w-full h-full rounded-lg cursor-crosshair"
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                />
-              </div>
+      <div className="p-4 space-y-4">
+        <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 max-w-[1400px] mx-auto">
+          <div className="flex h-[600px]">
+            <div className="w-20 bg-neutral-100 dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700 p-3 flex flex-col items-center space-y-4">
+              <ToolButton
+                icon={MousePointer2}
+                label="Selecionar"
+                active={selectedTool === 'select'}
+                onClick={() => setSelectedTool('select')}
+              />
+              <ToolButton
+                icon={Ruler}
+                label="Parede"
+                active={selectedTool === 'wall'}
+                onClick={() => setSelectedTool('wall')}
+              />
+              <ToolButton
+                icon={DoorOpen}
+                label="Porta"
+                active={selectedTool === 'door'}
+                onClick={() => setSelectedTool('door')}
+              />
+              <ToolButton
+                icon={AppWindow}
+                label="Janela"
+                active={selectedTool === 'window'}
+                onClick={() => setSelectedTool('window')}
+              />
             </div>
 
-            <div className="w-1/2 p-4 bg-neutral-100 dark:bg-neutral-900">
+            <div className="flex-1 flex flex-col">
+              <div className="flex flex-col h-full">
+                <div className="h-[60px] border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+                  <ImageAnalyzer onWallsDetected={handleWallsDetected} />
+                </div>
+
+                <div className="flex-1 relative bg-[#f5f5f5] dark:bg-neutral-950">
+                  <div className="absolute inset-0" style={{
+                    backgroundImage: 'linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)',
+                    backgroundSize: '20px 20px'
+                  }}></div>
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 w-full h-full cursor-crosshair"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-[250px] border-t border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900">
+            <div className="h-full p-2">
               <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-inner h-full">
                 <FloorPlan3DViewer
                   walls={walls}

@@ -126,7 +126,10 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
     const canvas = canvasRef.current
     if (!context || !canvas) return
 
+    context.save()
+    context.setTransform(1, 0, 0, 1, 0, 0)
     context.clearRect(0, 0, canvas.width, canvas.height)
+    context.restore()
 
     walls.forEach(wall => {
       context.beginPath()
@@ -221,8 +224,8 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
     }
 
     const rect = canvasRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const x = e.clientX - rect.left - rect.width/2
+    const y = e.clientY - rect.top - rect.height/2
 
     setIsDrawing(true)
 
@@ -254,8 +257,8 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
     if (!canvasRef.current) return
 
     const rect = canvasRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const x = e.clientX - rect.left - rect.width/2
+    const y = e.clientY - rect.top - rect.height/2
     const currentPoint = { x, y }
 
     if (selectedTool === 'door' || selectedTool === 'window') {
@@ -293,8 +296,8 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
 
     const rect = canvasRef.current.getBoundingClientRect()
     const currentPoint: Point = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      x: e.clientX - rect.left - rect.width/2,
+      y: e.clientY - rect.top - rect.height/2
     }
 
     const endPoint: Point = snapPoint || currentPoint
@@ -358,6 +361,8 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
       const context = canvas.getContext('2d')
       if (!context) return
 
+      context.translate(canvas.width / 2, canvas.height / 2)
+      
       context.strokeStyle = '#000000'
       context.lineWidth = 2
       contextRef.current = context
