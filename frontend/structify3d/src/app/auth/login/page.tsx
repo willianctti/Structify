@@ -1,0 +1,96 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Input } from '@/components/input'
+import Link from 'next/link'
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      const response = await fetch('http://localhost:8787/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token)
+        router.push('/dashboard')
+      } else {
+        alert(data.message)
+      }
+    } catch (error) {
+      console.error('Erro ao fazer login:', error)
+      alert('Erro ao fazer login')
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-md space-y-8 p-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold">Login</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Entre para acessar sua conta
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium">
+                Senha
+              </label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full rounded-md bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+          >
+            Entrar
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm">
+          Não tem uma conta?{' '}
+          <Link href="/auth/register" className="font-medium text-black hover:underline">
+            Registre-se
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
