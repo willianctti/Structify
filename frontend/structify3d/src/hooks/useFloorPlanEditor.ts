@@ -41,7 +41,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
 
   const findSnapPoint = useCallback((currentPoint: Point): Point => {
     let bestPoint: Point = { ...currentPoint }
-    let minDistance = SNAP_DISTANCE
+    let minDistance = SNAP_DISTANCE * 2
 
     walls.forEach(wall => {
       [wall.start, wall.end].forEach(point => {
@@ -362,6 +362,7 @@ export function useFloorPlanEditor(canvasRef: RefObject<HTMLCanvasElement>) {
       if (!context) return
 
       context.translate(canvas.width / 2, canvas.height / 2)
+      context.scale(0.8, 0.8)
       
       context.strokeStyle = '#000000'
       context.lineWidth = 2

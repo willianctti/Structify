@@ -29,9 +29,7 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Salvar o token no localStorage
         localStorage.setItem('token', data.token)
-        // Redirecionar para o dashboard
         router.push('/dashboard')
       } else {
         alert(data.message)

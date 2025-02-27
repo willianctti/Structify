@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Wall } from '@/types/floorplan'
 
+
 declare global {
   interface Window {
-    cv: any;
-    cvScriptLoaded?: boolean;
+    cvScriptLoaded?: boolean
+    Module: {
+      onRuntimeInitialized: () => void
+    }
   }
 }
 
@@ -71,19 +74,21 @@ export default function ImageAnalyzer({ onWallsDetected }: ImageAnalyzerProps) {
       if (!canvasRef.current || !window.cv) return
 
       const canvas = canvasRef.current
-      const CANVAS_WIDTH = 800
-      const CANVAS_HEIGHT = 600
+      const CANVAS_WIDTH = 1200
+      const CANVAS_HEIGHT = 900
       const centerX = CANVAS_WIDTH / 2
       const centerY = CANVAS_HEIGHT / 2
 
-      // Dimensões para o canvas
       let drawWidth, drawHeight
-      if (img.width / img.height > CANVAS_WIDTH / CANVAS_HEIGHT) {
-        drawWidth = CANVAS_WIDTH * 0.6
-        drawHeight = (drawWidth * img.height) / img.width
+      const aspectRatio = img.width / img.height
+      const canvasAspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT
+
+      if (aspectRatio > canvasAspectRatio) {
+        drawWidth = CANVAS_WIDTH * 0.95
+        drawHeight = drawWidth / aspectRatio
       } else {
-        drawHeight = CANVAS_HEIGHT * 0.6
-        drawWidth = (drawHeight * img.width) / img.height
+        drawHeight = CANVAS_HEIGHT * 0.95
+        drawWidth = drawHeight * aspectRatio
       }
 
       const offsetX = centerX - (drawWidth / 2)
@@ -96,9 +101,9 @@ export default function ImageAnalyzer({ onWallsDetected }: ImageAnalyzerProps) {
       if (!ctx) return
 
       try {
-        // 1. PROCESSAMENTO DO CANVAS (centralizado)
         ctx.fillStyle = 'white'
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+        
         ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
 
         const src = window.cv.imread(canvas)
@@ -119,18 +124,15 @@ export default function ImageAnalyzer({ onWallsDetected }: ImageAnalyzerProps) {
           10
         )
 
-        // 2. PROCESSAMENTO SEPARADO PARA CANVAS E 3D
         const walls: Wall[] = []
         for (let i = 0; i < lines.rows; ++i) {
           const [x1, y1, x2, y2] = lines.data32S.slice(i * 4)
 
-          // Ajustar coordenadas para o canvas centralizado
           const canvasX1 = x1 * (drawWidth / CANVAS_WIDTH) + offsetX
           const canvasY1 = y1 * (drawHeight / CANVAS_HEIGHT) + offsetY
           const canvasX2 = x2 * (drawWidth / CANVAS_WIDTH) + offsetX
           const canvasY2 = y2 * (drawHeight / CANVAS_HEIGHT) + offsetY
 
-          // Desenhar no canvas com coordenadas ajustadas
           window.cv.line(
             src,
             new window.cv.Point(canvasX1, canvasY1),
@@ -139,34 +141,32 @@ export default function ImageAnalyzer({ onWallsDetected }: ImageAnalyzerProps) {
             2
           )
           
-          // Coordenadas para o 3D (mantendo centralizado)
           const x1_3d = x1 - CANVAS_WIDTH/2
           const y1_3d = y1 - CANVAS_HEIGHT/2
           const x2_3d = x2 - CANVAS_WIDTH/2
           const y2_3d = y2 - CANVAS_HEIGHT/2
 
-          // Ajustando o fator de escala para o 3D
+          const scaleFactorX = 0.4
+          const scaleFactorY = 0.4
+
           walls.push({
             start: {
-              x: x1_3d * 0.3, // Reduzindo o fator de escala
-              y: y1_3d * 0.3
+              x: x1_3d * scaleFactorX,
+              y: y1_3d * scaleFactorY
             },
             end: {
-              x: x2_3d * 0.3,
-              y: y2_3d * 0.3
+              x: x2_3d * scaleFactorX,
+              y: y2_3d * scaleFactorY
             }
           })
         }
 
-        // Mostrar no canvas
         window.cv.imshow(canvas, src)
 
-        // Limpar memória
         src.delete()
         dst.delete()
         lines.delete()
 
-        // Enviar para o 3D
         onWallsDetected(walls)
 
       } catch (error) {
@@ -182,12 +182,16 @@ export default function ImageAnalyzer({ onWallsDetected }: ImageAnalyzerProps) {
     <div className="h-full flex items-center px-4">
       <button
         onClick={() => inputRef.current?.click()}
-        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+        className={`flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors
+          ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+        disabled={isProcessing || !isOpenCVReady}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
         </svg>
-        <span className="text-sm font-medium">Importar Planta Baixa</span>
+        <span className="text-sm font-medium">
+          {isProcessing ? 'Processando...' : 'Importar Planta Baixa'}
+        </span>
       </button>
       
       <input
@@ -196,9 +200,9 @@ export default function ImageAnalyzer({ onWallsDetected }: ImageAnalyzerProps) {
         className="hidden"
         accept="image/*"
         onChange={handleImageUpload}
+        disabled={isProcessing}
       />
 
-      {/* Canvas escondido - será usado apenas para processamento */}
       <canvas
         ref={canvasRef}
         className="hidden"
